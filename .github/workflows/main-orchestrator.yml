@@ -45,6 +45,8 @@ jobs:
       command: ${{ steps.extract_command.outputs.command }}
       additional_context: ${{ steps.extract_command.outputs.additional_context }}
     steps:
+      - uses: actions/checkout@v4 # Ensure repo context is available for gh/git
+
       - name: Extract command
         id: extract_command
         uses: actions/github-script@v7
@@ -92,7 +94,6 @@ jobs:
           BRANCH=$(echo "${{ github.ref }}" | sed -e 's|^refs/heads/||' -e 's|^refs/pull/||')
           
           # List and cancel in-progress runs of the Build Pipeline
-          # We use "🚀 Build Pipeline" as the workflow name
           RUNS=$(gh run list --workflow "🚀 Build Pipeline" --branch "$BRANCH" --status in_progress --json databaseId --jq '.[].databaseId')
           
           for RUN_ID in $RUNS; do
