@@ -45,7 +45,7 @@ jobs:
       command: ${{ steps.extract_command.outputs.command }}
       additional_context: ${{ steps.extract_command.outputs.additional_context }}
     steps:
-      - uses: actions/checkout@v4 # Ensure repo context is available for gh/git
+      - uses: actions/checkout@v6 # Ensure repo context is available for gh/git
 
       - name: Extract command
         id: extract_command
@@ -109,7 +109,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 50
