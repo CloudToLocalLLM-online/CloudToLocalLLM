@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.16.0] - 2025-12-26
+## v7.16.0
+
+### Features
+* **infra:** Add cloudflare tunnel configuration and service. (0e9d558)
+* Add secure secret injection to deployment pipeline. (fe62dfb)
+* **ops:** Add script to fix Azure OIDC subject mismatch. (b92761b)
+
+### Bug Fixes
+* Resolve ArgoCD 502 gateway and optimize cloudflared stability. (7008d0c)
+* Resolve secrets deployment failure and optimize pipeline. (794c576)
+* **ci:** Correct az login flags and set subscription separately. (22f4771)
+* **ci:** Convert gemini-cli.cjs to unix line endings. (11d1c33)
+* **ci:** Debug workflow validity. (8f8ce1d)
+* **ci:** Fallback to ubuntu-latest to debug runner issue. (46c26b1)
+* **ci:** Fetch OIDC token manually for az login. (4ae8ea7)
+* **ci:** Isolate workflow failure by removing sub-workflows. (173078b)
+* **ci:** Join az login command to single line to fix retry action args. (d48c2d5)
+* **ci:** Make Cloudflare DNS token optional in validation to prevent blocking. (925898e)
+* **ci:** Migrate build pipeline to standard runners and update tokens. (7ba02f8)
+* **ci:** Replace retry action with shell loop for az login to access OIDC token. (578d2b5)
+* **ci:** Restore orchestration logic with simplified json handling. (cb5efae)
+* **ci:** Robust json extraction from gemini output in orchestrator. (5e09273)
+* **ci:** Stabilize GHA workflows and enforce fail-fast Gemini integration. (6ba2703)
+* **ci:** Stabilize workflows by standardizing gemini CLI usage and JSON parsing. (f19c239)
+* **ci:** Use GITHUB_TOKEN for checkout to enable push. (9fde24b)
+* **ci:** Use GITHUB_TOKEN for dispatch to resolve 403. (542f9bf)
+* **ci:** Use python for robust json extraction in workflows. (8e75bb5)
+* **ci:** correctly handle optional cloudflare token in validation script (dc2beb1)
+* **scripts:** Ensure generate-changelog.sh is executable and LF normalized. (368e6e9)
+* **scripts:** Force LF line endings for shell scripts. (e06627d)
+
+### Refactoring
+* Use jq for secure secret injection in deployment pipeline. (52d5cd8)
+
+### Chore
+* Bump version to 7.14.27. (b7e7a0e)
+* Bump version to 7.14.28. (d295a6a)
+* Bump version to 7.14.29. (6396fa9)
+* Bump version to 7.14.30. (ab60407)
+* Bump version to 7.14.31. (3053fa7)
+* Bump version to 7.14.32. (1bf9012)
+* Bump version to 7.15.0. (29ea52f)
+* Bump version to 7.15.1. (670377e)
+* Bump version to 7.15.2. (c0c4fed)
+* Enforce LF line endings and normalize. (59dab96)
+* Force refresh build pipeline config. (eeb8221)
+* Update all repository references to GitHub Enterprise. (7d6188e)
+* **ci:** Exclude dependabot from main orchestrator. (9e67bef)
+* **ci:** Fix incorrect action name for retry action. (e857d69)
+* **ci:** Remove validation workflow and add emoji to build pipeline. (f70d23c)
+* **ci:** use standard azure/login@v2 action for authentication (027ae8f)
+* **ci:** broaden dependabot commit exclusion in main orchestrator (d8f17bf)
+* **deploy:** Promote version main-1bf90126e50ed152eab19370
+
 ## [7.15.2] - 2025-12-26
 ## v7.15.2 (2024-10-27)
 
