@@ -38,11 +38,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 2
-          max_attempts: 3
-          command: az login --service-principal --client-id ${{ secrets.AZURE_CLIENT_ID }} --tenant-id ${{ secrets.AZURE_TENANT_ID }} --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+        run: |
+          for i in {1..3}; do
+            if az login --service-principal --client-id ${{ secrets.AZURE_CLIENT_ID }} --tenant-id ${{ secrets.AZURE_TENANT_ID }} --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN; then
+              exit 0
+            fi
+            echo "Login failed, retrying in 10s..."
+            sleep 10
+          done
+          exit 1
       - name: Validate Prerequisites
         run: |
           chmod +x scripts/validate-aks-prerequisites.sh
@@ -71,11 +75,15 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.ref || github.ref }}
       - name: Azure Login
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 2
-          max_attempts: 3
-          command: az login --service-principal --client-id ${{ secrets.AZURE_CLIENT_ID }} --tenant-id ${{ secrets.AZURE_TENANT_ID }} --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+        run: |
+          for i in {1..3}; do
+            if az login --service-principal --client-id ${{ secrets.AZURE_CLIENT_ID }} --tenant-id ${{ secrets.AZURE_TENANT_ID }} --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN; then
+              exit 0
+            fi
+            echo "Login failed, retrying in 10s..."
+            sleep 10
+          done
+          exit 1
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: az acr login
@@ -104,11 +112,15 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.ref || github.ref }}
       - name: Azure Login
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 2
-          max_attempts: 3
-          command: az login --service-principal --client-id ${{ secrets.AZURE_CLIENT_ID }} --tenant-id ${{ secrets.AZURE_TENANT_ID }} --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+        run: |
+          for i in {1..3}; do
+            if az login --service-principal --client-id ${{ secrets.AZURE_CLIENT_ID }} --tenant-id ${{ secrets.AZURE_TENANT_ID }} --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN; then
+              exit 0
+            fi
+            echo "Login failed, retrying in 10s..."
+            sleep 10
+          done
+          exit 1
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: az acr login
@@ -139,11 +151,15 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.ref || github.ref }}
       - name: Azure Login
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 2
-          max_attempts: 3
-          command: az login --service-principal --client-id ${{ secrets.AZURE_CLIENT_ID }} --tenant-id ${{ secrets.AZURE_TENANT_ID }} --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN
+        run: |
+          for i in {1..3}; do
+            if az login --service-principal --client-id ${{ secrets.AZURE_CLIENT_ID }} --tenant-id ${{ secrets.AZURE_TENANT_ID }} --subscription-id ${{ secrets.AZURE_SUBSCRIPTION_ID }} --federated-token $ACTIONS_ID_TOKEN_REQUEST_TOKEN; then
+              exit 0
+            fi
+            echo "Login failed, retrying in 10s..."
+            sleep 10
+          done
+          exit 1
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: az acr login
