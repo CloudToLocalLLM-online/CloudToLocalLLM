@@ -2,6 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.14.27] - 2025-12-26
+## v7.14.27
+
+### Features
+
+*   **(infra):** Add cloudflare tunnel configuration and service. (0e9d558)
+*   Enhance ArgoCD stabilization with ROBUST testing and error handling. (5396e7f)
+*   Implement comprehensive ArgoCD stabilization plan for CloudToLocalLLM. (a6801e7)
+*   Add domain routing diagnostics & fixes. (fe469ba)
+*   (464e7d9)
+
+### Bug Fixes
+
+*   **(ci):** Replace retry action with shell loop for az login to access OIDC token. (578d2b5)
+*   **(ci):** Join az login command to single line to fix retry action args. (d48c2d5)
+*   **(ci):** Migrate build pipeline to standard runners and update tokens. (7ba02f8)
+*   **(ci):** Use GITHUB_TOKEN for checkout to enable push. (9fde24b)
+*   **(ci):** Use GITHUB_TOKEN for dispatch to resolve 403. (542f9bf)
+*   **(ci):** Convert gemini-cli.cjs to unix line endings. (11d1c33)
+*   **(ci):** Restore orchestration logic with simplified json handling. (cb5efae)
+*   **(ci):** Isolate workflow failure by removing sub-workflows. (173078b)
+*   **(ci):** Debug workflow validity. (8f8ce1d)
+*   **(ci):** Fallback to ubuntu-latest to debug runner issue. (46c26b1)
+*   **(ci):** Move json cleanup to cli script and simplify workflows. (640ace9)
+*   **(ci):** Use python for robust json extraction in workflows. (8e75bb5)
+*   **(ci):** Stabilize workflows by standardizing gemini CLI usage and JSON parsing. (f19c239)
+*   **(ci):** Stabilize GHA workflows and enforce fail-fast Gemini integration. (6ba2703)
+*   **(scripts):** Ensure generate-changelog.sh is executable and LF normalized. (368e6e9)
+*   **(scripts):** Force LF line endings for shell scripts. (e06627d)
+*   **(ci):** Robust json extraction from gemini output in orchestrator. (5e09273)
+*   **(argocd):** Solve NOAUTH and manifestation timeouts. (a86d9c3)
+*   **(gitops):** De-duplicate resources between infrastructure and api-backend. (e50e5c7)
+*   **(argocd):** Restore connectivity and optimize resources. (41f66c9)
+*   Update web-frontend kustomization to reference correct file paths. (f0583c2)
+*   Remove shared RBAC role from web-frontend kustomization to resolve resource conflict. (ff970b8)
+*   Remove shared network policies from web-frontend kustomization to resolve resource conflict. (3cc279e)
+*   Remove shared namespace from web-frontend kustomization to resolve resource conflict. (941f28f)
+*   Remove shared configmap from web-frontend kustomization to resolve resource conflict. (8e301e4)
+*   Remove invalid patchesStrategicMerge from api-backend kustomization. (85dd22d)
+*   (e635c16)
+*   (ccf2cd3)
+*   (03092e7)
+*   (302d62f)
+*   (eadf45b)
+
+### Documentation
+
+*   Archive stray task reports from codebase to docs/archive/tasks/. (5826a4c)
+*   Restructure documentation and unify agent context. (bf829f5)
+*   Update operational rules and add manifests. (54b7a5b)
+*   Enforce Sequential Thinking Mandate and update MCP tool manual. (89d31fe)
+
+### Chore
+
+*   **(ci):** Remove validation workflow and add emoji to build pipeline. (f70d23c)
+*   **(ci):** Fix incorrect action name for retry action. (e857d69)
+*   **(ci):** Exclude dependabot from main orchestrator. (9e67bef)
+
 ## [7.14.26] - 2025-12-23
 ### Features
 * feat: re-enable AI workflows with AI Agent Gateway
