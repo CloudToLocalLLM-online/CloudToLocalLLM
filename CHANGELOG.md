@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.14.31] - 2025-12-26
+## 7.14.31 (2024-02-29)
+
+### Features
+
+*   **(infra):** Add cloudflare tunnel configuration and service ([0e9d558](https://github.com/your-repo/your-project/commit/0e9d558))
+*   **(ops):** Add script to fix Azure OIDC subject mismatch ([b92761b](https://github.com/your-repo/your-project/commit/b92761b))
+
+### Bug Fixes
+
+*   Fix various issues related to Gemini 1.5 Flash and other unspecified problems. ([e635c16](https://github.com/your-repo/your-project/commit/e635c16), [ccf2cd3](https://github.com/your-repo/your-project/commit/ccf2cd3), [03092e7](https://github.com/your-repo/your-project/commit/03092e7), [302d62f](https://github.com/your-repo/your-project/commit/302d62f))
+*   **(argocd):** Restore connectivity and optimize resources ([41f66c9](https://github.com/your-repo/your-project/commit/41f66c9))
+*   **(argocd):** Solve NOAUTH and manifestation timeouts ([a86d9c3](https://github.com/your-repo/your-project/commit/a86d9c3))
+*   **(ci):** Correct az login flags and set subscription separately ([22f4771](https://github.com/your-repo/your-project/commit/22f4771))
+*   **(ci):** Convert gemini-cli.cjs to unix line endings ([11d1c33](https://github.com/your-repo/your-project/commit/11d1c33))
+*   **(ci):** Fallback to ubuntu-latest to debug runner issue ([46c26b1](https://github.com/your-repo/your-project/commit/46c26b1))
+*   **(ci):** Fetch OIDC token manually for az login ([4ae8ea7](https://github.com/your-repo/your-project/commit/4ae8ea7))
+*   **(ci):** Isolate workflow failure by removing sub-workflows ([173078b](https://github.com/your-repo/your-project/commit/173078b))
+*   **(ci):** Join az login command to single line to fix retry action args ([d48c2d5](https://github.com/your-repo/your-project/commit/d48c2d5))
+*   **(ci):** Make Cloudflare DNS token optional in validation to prevent blocking ([925898e](https://github.com/your-repo/your-project/commit/925898e))
+*   **(ci):** Migrate build pipeline to standard runners and update tokens ([7ba02f8](https://github.com/your-repo/your-project/commit/7ba02f8))
+*   **(ci):** Restore orchestration logic with simplified json handling ([cb5efae](https://github.com/your-repo/your-project/commit/cb5efae))
+*   **(ci):** Stabilize GHA workflows and enforce fail-fast Gemini integration ([6ba2703](https://github.com/your-repo/your-project/commit/6ba2703))
+*   **(ci):** Stabilize workflows by standardizing gemini CLI usage and JSON parsing ([f19c239](https://github.com/your-repo/your-project/commit/f19c239))
+*   **(ci):** Use GITHUB_TOKEN for checkout to enable push ([9fde24b](https://github.com/your-repo/your-project/commit/9fde24b))
+*   **(ci):** Use GITHUB_TOKEN for dispatch to resolve 403 ([542f9bf](https://github.com/your-repo/your-project/commit/542f9bf))
+*   **(ci):** Use python for robust json extraction in workflows ([8e75bb5
+
 ## [7.14.30] - 2025-12-26
 ## v7.14.30 (2024-10-27)
 
