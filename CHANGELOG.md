@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.16.3] - 2025-12-26
+## v7.16.3 (2024-10-27)
+
+### Bug Fixes
+
+*   Fix ArgoCD cloudflared configuration to use HTTP instead of HTTPS (61f673c)
+*   Resolve grep option error in build pipeline (485f36c)
+*   Ensure actions/checkout is executed before gh commands in orchestrator (cd36420)
+
 ## [7.16.2] - 2025-12-26
 ## v7.16.2 (Unreleased)
 
