@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.15.2] - 2025-12-26
+## v7.15.2 (2024-10-27)
+
+### Features
+*   feat: add secure secret injection to deployment pipeline (fe62dfb)
+*   feat(ops): add script to fix Azure OIDC subject mismatch (b92761b)
+*   feat(infra): add cloudflare tunnel configuration and service (0e9d558)
+
+### Bug Fixes
+*   fix: resolve secrets deployment failure and optimize pipeline (794c576)
+*   fix: resolve ArgoCD 502 gateway and optimize cloudflared stability (7008d0c)
+*   fix(ci): correctly handle optional cloudflare token in validation script (dc2beb1)
+*   fix(ci): make Cloudflare DNS token optional in validation to prevent blocking (925898e)
+*   fix(ci): use standard azure/login@v2 action for authentication (027ae8f)
+*   fix(ci): fetch OIDC token manually for az login (4ae8ea7)
+*   fix(ci): correct az login flags and set subscription separately (22f4771)
+*   fix(ci): replace retry action with shell loop for az login to access OIDC token (578d2b5)
+*   fix(ci): join az login command to single line to fix retry action args (d48c2d5)
+*   fix(ci): fix incorrect action name for retry action (e857d69)
+*   fix(ci): migrate build pipeline to standard runners and update tokens (7ba02f8)
+*   fix(ci): use GITHUB_TOKEN for checkout to enable push (9fde24b)
+*   fix(ci): use GITHUB_TOKEN for dispatch to resolve 403 (542f9bf)
+*   fix(ci): convert gemini-cli.cjs to unix line endings (11d1c33)
+*   fix(ci): restore orchestration logic with simplified json handling (cb5efae)
+*   fix(ci): isolate workflow failure by removing sub-workflows (173078b)
+*   fix(ci): debug workflow validity (8f8ce1d)
+*   fix(ci): fallback to ubuntu-latest to debug runner issue (46c26b1)
+*   fix(ci): move json cleanup to cli script and simplify workflows (640ace9)
+*   fix(ci): use python for robust json extraction in workflows (8e75bb5)
+*   fix(ci): stabilize workflows by standardizing gemini CLI usage and JSON parsing (f19c239)
+*   fix(ci): stabilize GHA workflows and enforce fail-fast Gemini integration (6ba2703)
+*   fix(scripts): ensure generate-changelog.sh is executable and LF normalized (368e6e9)
+*   fix(scripts): force LF line endings for shell scripts (e06627d)
+*   fix(ci): robust json extraction from gemini output in orchestrator (5e09273)
+
+### Documentation
+*   docs: archive stray task reports from codebase to docs/archive/tasks/ (5826a4c)
+*   docs: restructure documentation and unify agent context (bf829f5)
+
+### Chore
+*   chore: bump version to 7.15.1 (670377e)
+*   chore(deploy): promote version main-1bf90126e50ed152eab193704119cc3efceca143 [skip ci] (dfab785)
+*   chore: bump version to 7.15.0 (29ea52f)
+*   chore: bump version to 7.14.32 (1bf9012)
+*   chore(deploy): promote version main-3053fa7d7e1391252e18d85228d57ae7de4741d1 [skip ci] (690f9bb)
+*   chore: bump version to 7.14.31 (3053fa7)
+*   chore: bump version to 7.14.30 (ab60407)
+*   chore: bump version to 7.14.29 (6396fa9)
+
 ## [7.15.1] - 2025-12-26
 ## 7.15.1 (Unreleased)
 
