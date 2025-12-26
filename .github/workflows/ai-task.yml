@@ -63,10 +63,17 @@ jobs:
           }
           EOF
           echo "🔄 Starting AI Agent execution..."
+          
+          # Ensure local gemini CLI is usable
+          if [ -f scripts/gemini-cli.cjs ]; then
+            chmod +x scripts/gemini-cli.cjs
+            sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini
+          fi
+          
           TITLE_ESCAPED=$(echo "$TITLE" | sed 's/"/\"/g')
           DESC_ESCAPED=$(echo "$DESCRIPTION" | sed 's/"/\"/g')
           CONTEXT_ESCAPED=$(echo "$ADDITIONAL_CONTEXT" | sed 's/"/\"/g')
-          if ! gemini "TITLE: $TITLE_ESCAPED. DESCRIPTION: $DESC_ESCAPED. CONTEXT: $CONTEXT_ESCAPED. Please assist with the request." --yolo --model gemini-1.5-flash -o json > raw_output.json 2> ai_error.log; then
+          if ! gemini "TITLE: $TITLE_ESCAPED. DESCRIPTION: $DESC_ESCAPED. CONTEXT: $CONTEXT_ESCAPED. Please assist with the request." > raw_output.json 2> ai_error.log; then
             echo "::error::AI Agent failed"
             cat ai_error.log
             exit 1

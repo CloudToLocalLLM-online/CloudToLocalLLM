@@ -84,7 +84,14 @@ jobs:
           {\"labels\": [\"bug\", \"priority: low\"]}"
 
           echo "🔄 Starting AI issue analysis..."
-          if ! gemini "$PROMPT" --yolo --model gemini-1.5-flash -o json > raw_output.json 2> ai_error.log; then
+          
+          # Ensure local gemini CLI is usable
+          if [ -f scripts/gemini-cli.cjs ]; then
+            chmod +x scripts/gemini-cli.cjs
+            sudo ln -sf "$(pwd)/scripts/gemini-cli.cjs" /usr/local/bin/gemini
+          fi
+
+          if ! gemini "$PROMPT" > raw_output.json 2> ai_error.log; then
             echo "::error::AI Agent CLI failed"
             echo "📝 Error details:"
             cat ai_error.log
@@ -95,7 +102,7 @@ jobs:
             exit 1
           fi
           echo "✅ AI issue analysis completed successfully"
-          CLEAN_JSON=$(cat raw_output.json | jq -r '.response' | sed -n '/{/,/}/p')
+          CLEAN_JSON=$(cat raw_output.json | sed 's/```json//g' | sed 's/```//g' | sed -n '/{/,/}/p')
           echo "ai_output<<EOF" >> $GITHUB_OUTPUT
           echo "$CLEAN_JSON" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT

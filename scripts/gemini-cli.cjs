@@ -4,7 +4,8 @@
 
 const https = require('https');
 
-const prompt = process.argv.slice(2).join(' ');
+const args = process.argv.slice(2);
+const prompt = args.filter(arg => !arg.startsWith('-')).join(' ');
 const apiKey = process.env.GEMINI_API_KEY;
 
 if (!prompt) {

@@ -140,17 +140,17 @@ jobs:
 
           echo "Running Gemini analysis..."
           # FAIL FAST: Removed fallback logic. If Gemini fails, script fails.
-          gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG. Respond ONLY with a JSON object like {\"version_bump_needed\": boolean, \"new_version\": \"string\"}." --yolo --model gemini-1.5-flash -o json > raw_output.json
+          gemini "Analyze the latest changes and decide if a release is needed. Version=$VERSION. Commit message: $COMMIT_MSG. Respond ONLY with a JSON object like {\"version_bump_needed\": boolean, \"new_version\": \"string\"}." > raw_output.json
 
           # Debug: show raw output
           cat raw_output.json
 
-          # Extract only the JSON part directly from the file (handling Markdown)
-          CLEAN_RESPONSE=$(cat raw_output.json | sed -n '/^{/,/^}/p')
+          # Extract JSON object, handling potential Markdown code blocks
+          CLEAN_RESPONSE=$(cat raw_output.json | sed 's/```json//g' | sed 's/```//g' | sed -n '/{/,/}/p')
           
-          # Fallback if sed returns empty (e.g. plain JSON or inline)
+          # Fallback: if empty, try just reading the file (if it was pure JSON)
           if [ -z "$CLEAN_RESPONSE" ]; then
-             CLEAN_RESPONSE=$(cat raw_output.json | sed 's/```json//g' | sed 's/```//g')
+             CLEAN_RESPONSE=$(cat raw_output.json)
           fi
 
           echo "Cleaned response: $CLEAN_RESPONSE"
