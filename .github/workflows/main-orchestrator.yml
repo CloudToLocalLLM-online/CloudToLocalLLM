@@ -29,7 +29,7 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: "${{ github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !startsWith(github.event.head_commit.message, 'chore: bump version') && !startsWith(github.event.head_commit.message, 'chore(deploy): promote') }}"
+    if: "${{ github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !startsWith(github.event.head_commit.message, 'chore: bump version') && !startsWith(github.event.head_commit.message, 'chore(deploy): promote') && !startsWith(github.event.head_commit.message, 'chore(deps') && !startsWith(github.event.head_commit.message, 'build(deps') }}"
     permissions:
       contents: read
       issues: write
