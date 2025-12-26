@@ -189,3 +189,13 @@ azure-config-*.json
 
 .gemini/
 gha-creds-*.json
+
+# Diagnostic and temporary sync files
+*.raw
+*.json.raw
+stdout.txt
+stderr.txt
+debug_apps.json
+debug_apps_cleaned.json
+apps.json
+
