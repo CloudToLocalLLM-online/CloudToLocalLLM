@@ -372,7 +372,7 @@ validate_github_secrets() {
         "POSTGRES_PASSWORD:PostgreSQL Password"
         "JWT_SECRET:JWT Secret"
         "STRIPE_TEST_SECRET_KEY:Stripe Test Secret Key"
-        "CLOUDFLARE_DNS_TOKEN:Cloudflare DNS Token"
+        "CLOUDFLARE_DNS_TOKEN:Cloudflare DNS Token":false
         "CLOUDFLARE_TUNNEL_TOKEN:Cloudflare Tunnel Token"
         "SUPABASE_JWT_SECRET:Supabase JWT Secret"
     )
