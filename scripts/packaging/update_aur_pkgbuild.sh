@@ -17,7 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PKGBUILD_TEMPLATE="$PROJECT_ROOT/build-tools/packaging/aur/PKGBUILD"
 AUR_OUTPUT_DIR="$PROJECT_ROOT/dist/aur"
-GITHUB_REPO="imrightguy/CloudToLocalLLM"
+GITHUB_REPO="CloudToLocalLLM-online/CloudToLocalLLM"
 
 # Functions
 print_status() {

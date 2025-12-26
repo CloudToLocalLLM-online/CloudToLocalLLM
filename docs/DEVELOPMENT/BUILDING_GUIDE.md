@@ -432,4 +432,4 @@ flutter doctor -v
 
 ---
 
-*For build issues or questions, please check our [troubleshooting guide](../USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md) or [open an issue](https://github.com/imrightguy/CloudToLocalLLM/issues).*
+*For build issues or questions, please check our [troubleshooting guide](../USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md) or [open an issue](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues).*

@@ -107,8 +107,8 @@ CloudToLocalLLM requires Ollama to run local AI models:
 - **[FAQ](../USER_DOCUMENTATION/SETUP_TROUBLESHOOTING_FAQ.md)** - Frequently asked questions
 
 ### 💬 **Support**
-- **[GitHub Issues](https://github.com/imrightguy/CloudToLocalLLM/issues)** - Report bugs or ask questions
-- **[Discussions](https://github.com/imrightguy/CloudToLocalLLM/discussions)** - Community support
+- **[GitHub Issues](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues)** - Report bugs or ask questions
+- **[Discussions](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/discussions)** - Community support
 - **[User Troubleshooting](../USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md)** - Self-help guide
 
 ---
@@ -120,7 +120,7 @@ CloudToLocalLLM requires Ollama to run local AI models:
 - Check for updates in the application settings
 
 ### **Manual Updates**
-- Download latest version from [releases](https://github.com/imrightguy/CloudToLocalLLM/releases)
+- Download latest version from [releases](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases)
 - Follow the same installation process
 - Your settings and data will be preserved
 

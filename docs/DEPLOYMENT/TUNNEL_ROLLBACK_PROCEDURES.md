@@ -246,8 +246,8 @@ docker-compose up -d --force-recreate api-backend
 **Download Previous Version:**
 ```bash
 # Download from GitHub releases
-wget https://github.com/imrightguy/CloudToLocalLLM/releases/download/v3.10.2/cloudtolocalllm-linux.AppImage
-wget https://github.com/imrightguy/CloudToLocalLLM/releases/download/v3.10.2/cloudtolocalllm-windows.exe
+wget https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/download/v3.10.2/cloudtolocalllm-linux.AppImage
+wget https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/download/v3.10.2/cloudtolocalllm-windows.exe
 
 # Verify checksums
 sha256sum cloudtolocalllm-linux.AppImage

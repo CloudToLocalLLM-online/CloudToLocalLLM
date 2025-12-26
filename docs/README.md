@@ -159,7 +159,7 @@ See our [Contribution Guidelines](development/CONTRIBUTING.md) for detailed info
 - **Performance Issues**: Monitor connection status and tunnel health
 
 ### Support Channels
-- **GitHub Issues**: [Report bugs and request features](https://github.com/imrightguy/CloudToLocalLLM/issues)
+- **GitHub Issues**: [Report bugs and request features](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues)
 - **Documentation**: Search this documentation for answers
 - **Community**: Participate in repository discussions
 

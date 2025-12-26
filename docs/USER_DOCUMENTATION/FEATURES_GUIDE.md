@@ -320,7 +320,7 @@ cloudtolocalllm-settings --reset-performance
 - [Self-Hosting Guide](../OPERATIONS/SELF_HOSTING.md) - VPS deployment instructions
 
 ### **Community Resources**
-- **GitHub Repository**: [CloudToLocalLLM](https://github.com/imrightguy/CloudToLocalLLM)
+- **GitHub Repository**: [CloudToLocalLLM](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM)
 - **Issue Tracker**: Report bugs and request features
 - **Discussions**: Community support and tips
 - **Wiki**: Additional documentation and tutorials

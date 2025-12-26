@@ -195,4 +195,4 @@ For detailed information, see [Versioning Strategy](VERSIONING_STRATEGY.md).
 
 ---
 
-*For questions about deployment, please see our [troubleshooting guide](deployment-troubleshooting.md) or [open an issue](https://github.com/imrightguy/CloudToLocalLLM/issues).*
+*For questions about deployment, please see our [troubleshooting guide](deployment-troubleshooting.md) or [open an issue](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues).*

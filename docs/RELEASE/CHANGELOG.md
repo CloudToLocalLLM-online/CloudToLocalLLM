@@ -1538,4 +1538,4 @@ For users upgrading from v3.1.x:
 
 ---
 
-For more information about each release, visit our [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases) page.
+For more information about each release, visit our [GitHub Releases](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases) page.

@@ -115,7 +115,7 @@ CloudToLocalLLM/
 
 ### **1. Clone the Repository**
 ```bash
-git clone https://github.com/imrightguy/CloudToLocalLLM.git
+git clone https://github.com/CloudToLocalLLM-online/CloudToLocalLLM.git
 cd CloudToLocalLLM
 ```
 

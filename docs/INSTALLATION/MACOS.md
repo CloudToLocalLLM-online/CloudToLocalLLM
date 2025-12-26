@@ -38,7 +38,7 @@ If you're a developer or want to help test macOS support, you can build from sou
 flutter config --enable-macos-desktop
 
 # Clone repository
-git clone https://github.com/imrightguy/CloudToLocalLLM.git
+git clone https://github.com/CloudToLocalLLM-online/CloudToLocalLLM.git
 cd CloudToLocalLLM
 
 # Install dependencies
@@ -115,7 +115,7 @@ ollama list
 ### 🏠 **Homebrew (Planned)**
 ```bash
 # Add CloudToLocalLLM tap
-brew tap imrightguy/cloudtolocalllm
+brew tap CloudToLocalLLM-online/CloudToLocalLLM
 
 # Install CloudToLocalLLM
 brew install cloudtolocalllm
@@ -149,8 +149,8 @@ We welcome contributions to macOS support:
 - **Feedback**: Share your experience and suggestions
 
 ### 📝 **How to Contribute**
-1. **Join the Discussion**: [GitHub Discussions](https://github.com/imrightguy/CloudToLocalLLM/discussions)
-2. **Report Issues**: [GitHub Issues](https://github.com/imrightguy/CloudToLocalLLM/issues) with "macOS" label
+1. **Join the Discussion**: [GitHub Discussions](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/discussions)
+2. **Report Issues**: [GitHub Issues](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues) with "macOS" label
 3. **Submit PRs**: Follow our [Contributing Guide](../../CONTRIBUTING.md)
 4. **Test Builds**: Help test development builds
 
@@ -166,14 +166,14 @@ We welcome contributions to macOS support:
 ## 📢 Stay Updated
 
 ### 🔔 **Get Notified**
-- **Watch** the [GitHub repository](https://github.com/imrightguy/CloudToLocalLLM) for updates
+- **Watch** the [GitHub repository](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM) for updates
 - **Follow** releases for macOS availability announcements
-- **Join** our [discussions](https://github.com/imrightguy/CloudToLocalLLM/discussions) for development updates
+- **Join** our [discussions](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/discussions) for development updates
 
 ### 📅 **Milestones**
 Track macOS development progress:
-- [macOS Support Milestone](https://github.com/imrightguy/CloudToLocalLLM/milestone/1)
-- [macOS Issues](https://github.com/imrightguy/CloudToLocalLLM/labels/macOS)
+- [macOS Support Milestone](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/milestone/1)
+- [macOS Issues](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/labels/macOS)
 
 ---
 
@@ -216,8 +216,8 @@ docker run -d --name cloudtolocalllm \
 ## 📞 Contact
 
 For questions about macOS support:
-- **GitHub Issues**: [Report macOS-related issues](https://github.com/imrightguy/CloudToLocalLLM/issues/new?labels=macOS)
-- **Discussions**: [Join macOS development discussions](https://github.com/imrightguy/CloudToLocalLLM/discussions)
+- **GitHub Issues**: [Report macOS-related issues](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues/new?labels=macOS)
+- **Discussions**: [Join macOS development discussions](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/discussions)
 - **Email**: Contact us through GitHub for specific macOS development questions
 
 ---

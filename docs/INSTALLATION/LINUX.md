@@ -67,7 +67,7 @@ sudo apt-get install -y libgtk-3-0 libglib2.0-0 libnss3 libatk-bridge2.0-0
 #### **Download and Install**
 ```bash
 # Download latest DEB package
-wget https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm_amd64.deb
+wget https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/cloudtolocalllm_amd64.deb
 
 # Install the package
 sudo dpkg -i cloudtolocalllm_amd64.deb
@@ -118,7 +118,7 @@ sudo apt-get purge cloudtolocalllm
 #### **Download and Setup**
 ```bash
 # Download latest AppImage
-wget https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-x86_64.AppImage
+wget https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-x86_64.AppImage
 
 # Make executable
 chmod +x CloudToLocalLLM-x86_64.AppImage
@@ -158,7 +158,7 @@ update-desktop-database ~/.local/share/applications/
 ### 🔄 **Updates**
 ```bash
 # Download new version and replace old file
-wget https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-x86_64.AppImage
+wget https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/CloudToLocalLLM-x86_64.AppImage
 chmod +x CloudToLocalLLM-x86_64.AppImage
 ```
 
@@ -182,7 +182,7 @@ sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
 #### **Build Process**
 ```bash
 # Clone repository
-git clone https://github.com/imrightguy/CloudToLocalLLM.git
+git clone https://github.com/CloudToLocalLLM-online/CloudToLocalLLM.git
 cd CloudToLocalLLM
 
 # Install dependencies
@@ -380,4 +380,4 @@ rm -rf ~/.config/cloudtolocalllm
 
 ---
 
-*For additional help, see our  or [open an issue](https://github.com/imrightguy/CloudToLocalLLM/issues).*
+*For additional help, see our  or [open an issue](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues).*

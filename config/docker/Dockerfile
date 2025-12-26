@@ -1,4 +1,4 @@
-﻿# Updated 2025-05-09: Modern Docker image for Flutter server app
+# Updated 2025-05-09: Modern Docker image for Flutter server app
 FROM ghcr.io/cirruslabs/flutter:latest AS build
 
 WORKDIR /app

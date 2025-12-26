@@ -749,7 +749,7 @@ When reporting build issues, include:
 5. **Expected vs actual**: What should happen vs what happened
 
 **Where to report:**
-- GitHub Issues: https://github.com/imrightguy/CloudToLocalLLM/issues
+- GitHub Issues: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues
 - Include label: `ci/cd` or `build`
 
 

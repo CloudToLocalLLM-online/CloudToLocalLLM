@@ -67,4 +67,4 @@ This directory contains deployment documentation for CloudToLocalLLM. The projec
 
 ---
 
-*For questions about deployment, see [COMPLETE_DEPLOYMENT_WORKFLOW.md](./COMPLETE_DEPLOYMENT_WORKFLOW.md) or [open an issue](https://github.com/imrightguy/CloudToLocalLLM/issues).*
+*For questions about deployment, see [COMPLETE_DEPLOYMENT_WORKFLOW.md](./COMPLETE_DEPLOYMENT_WORKFLOW.md) or [open an issue](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues).*

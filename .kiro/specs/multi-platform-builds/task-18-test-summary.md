@@ -149,7 +149,7 @@ Make verification conditional on whether dependencies should already be installe
 
 ## Test Artifacts
 
-- Workflow run logs: https://github.com/imrightguy/CloudToLocalLLM/actions/runs/19387249910
+- Workflow run logs: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/actions/runs/19387249910
 - Test tag: v4.5.0-test (deleted after test)
 
 ## Conclusion

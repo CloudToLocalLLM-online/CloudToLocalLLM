@@ -53,7 +53,7 @@ POOL_ID=github-pool
 PROVIDER_ID=github-provider
 DEPLOYER_SA_ID=cloudtolocalllm-deployer
 RUNTIME_SA_ID=cloudtolocalllm-runner
-REPO=imrightguy/CloudToLocalLLM
+REPO=CloudToLocalLLM-online/CloudToLocalLLM
 AR_REPO=cloud-run-source-deploy
 
 # Set defaults and discover project number
@@ -94,7 +94,7 @@ gcloud iam workload-identity-pools providers create-oidc $PROVIDER_ID \
   --issuer-uri "https://token.actions.githubusercontent.com" \
   --attribute-mapping "google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref"
 # Optional: restrict to this repo only with an attribute condition
-# --attribute-condition "attribute.repository=='imrightguy/CloudToLocalLLM'"
+# --attribute-condition "attribute.repository=='CloudToLocalLLM-online/CloudToLocalLLM'"
 ```
 
 Allow GitHub repo to impersonate the deployer SA via WIF:
@@ -297,6 +297,6 @@ gh run view $RUN_ID --log-failed
 - Deployer SA: cloudtolocalllm-deployer@cloudtolocalllm-468303.iam.gserviceaccount.com
 - Runtime SA: cloudtolocalllm-runner@cloudtolocalllm-468303.iam.gserviceaccount.com
 - Artifact Registry: us-east4/cloud-run-source-deploy
-- GitHub repo: imrightguy/CloudToLocalLLM
+- GitHub repo: CloudToLocalLLM-online/CloudToLocalLLM
 - Workflow requires repo variables: WIF_PROVIDER, WIF_SERVICE_ACCOUNT, GCP_PROJECT_ID, GCP_REGION
 

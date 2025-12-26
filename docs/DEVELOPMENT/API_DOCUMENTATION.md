@@ -590,7 +590,7 @@ wss://app.cloudtolocalllm.online/ws/{type}/{id}
 Download the complete API collection:
 ```bash
 curl -o cloudtolocalllm-api.json \
-  https://raw.githubusercontent.com/imrightguy/CloudToLocalLLM/main/docs/api/postman-collection.json
+  https://raw.githubusercontent.com/CloudToLocalLLM-online/CloudToLocalLLM/main/docs/api/postman-collection.json
 ```
 
 #### **OpenAPI Specification**
@@ -639,4 +639,4 @@ X-RateLimit-Reset: 1640995200
 
 ---
 
-**For additional API details, examples, and SDKs, visit the [GitHub repository](https://github.com/imrightguy/CloudToLocalLLM) or check the interactive API documentation at `/api/docs`.**
+**For additional API details, examples, and SDKs, visit the [GitHub repository](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM) or check the interactive API documentation at `/api/docs`.**

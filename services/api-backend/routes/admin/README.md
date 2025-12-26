@@ -520,6 +520,6 @@ Planned routes (see `.kiro/specs/admin-center/tasks.md`):
 
 For issues or questions:
 
-- GitHub Issues: https://github.com/imrightguy/CloudToLocalLLM/issues
+- GitHub Issues: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues
 - Documentation: `/docs/`
 - Email: support@cloudtolocalllm.online

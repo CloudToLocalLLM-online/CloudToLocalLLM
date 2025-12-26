@@ -94,7 +94,7 @@ git status
 
 2. **Get Release ID** (if using API):
    ```bash
-   gh api repos/imrightguy/CloudToLocalLLM/releases/latest | jq '.id'
+   gh api repos/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest | jq '.id'
    ```
 
 ### Step 5: Upload Assets to GitHub Release

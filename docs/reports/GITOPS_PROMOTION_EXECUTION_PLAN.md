@@ -197,7 +197,7 @@ git push origin main
 [main 872ddc7b] feat: Complete GitOps promotion for api-backend and web-frontend
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-To github.com:imrightguy/CloudToLocalLLM.git
+To github.com:CloudToLocalLLM-online/CloudToLocalLLM.git
    b5670aaf3..872ddc7bf  main -> main
 ```
 

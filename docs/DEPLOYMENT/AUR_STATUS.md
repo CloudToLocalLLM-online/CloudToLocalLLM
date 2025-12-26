@@ -77,7 +77,7 @@ AUR (Arch User Repository) support for CloudToLocalLLM has been temporarily remo
 ### Option 1: AppImage (Recommended)
 ```bash
 # Download latest AppImage
-wget https://github.com/imrightguy/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-4.0.78-x86_64.AppImage
+wget https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest/download/cloudtolocalllm-4.0.78-x86_64.AppImage
 
 # Make executable and run
 chmod +x cloudtolocalllm-4.0.78-x86_64.AppImage
@@ -90,7 +90,7 @@ chmod +x cloudtolocalllm-4.0.78-x86_64.AppImage
 ### Option 2: Source Compilation
 ```bash
 # Clone repository
-git clone https://github.com/imrightguy/CloudToLocalLLM.git
+git clone https://github.com/CloudToLocalLLM-online/CloudToLocalLLM.git
 cd CloudToLocalLLM
 
 # Build using unified package script

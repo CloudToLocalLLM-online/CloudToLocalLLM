@@ -364,7 +364,7 @@ sudo systemctl start docker
 # scripts/vps/deploy_application.sh
 
 # Clone repository
-git clone https://github.com/imrightguy/CloudToLocalLLM.git /opt/cloudtolocalllm
+git clone https://github.com/CloudToLocalLLM-online/CloudToLocalLLM.git /opt/cloudtolocalllm
 cd /opt/cloudtolocalllm
 
 # Set permissions

@@ -46,7 +46,7 @@ gcloud auth application-default login
 
 ```bash
 # Clone and navigate to the repository
-git clone https://github.com/imrightguy/CloudToLocalLLM.git
+git clone https://github.com/CloudToLocalLLM-online/CloudToLocalLLM.git
 cd CloudToLocalLLM
 
 # Copy and configure environment

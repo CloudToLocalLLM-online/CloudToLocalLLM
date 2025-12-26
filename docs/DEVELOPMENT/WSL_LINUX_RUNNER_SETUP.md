@@ -55,7 +55,7 @@ This will guide you through the setup process.
 
 ### Step 1: Get Runner Registration Token
 
-1. Go to: `https://github.com/imrightguy/CloudToLocalLLM/settings/actions/runners`
+1. Go to: `https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/settings/actions/runners`
 2. Click **New runner**
 3. Select **Linux** and **x64**
 4. Copy the registration token
@@ -150,7 +150,7 @@ curl -o actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz \
 tar xzf actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz
 
 # Configure
-./config.sh --url https://github.com/imrightguy/CloudToLocalLLM \
+./config.sh --url https://github.com/CloudToLocalLLM-online/CloudToLocalLLM \
     --token YOUR_TOKEN \
     --labels linux,self-hosted,wsl \
     --name WSL-Linux-$(hostname) \
@@ -168,7 +168,7 @@ tar xzf actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz
 ### Check Runner Status
 
 1. **In GitHub:**
-   - Visit: `https://github.com/imrightguy/CloudToLocalLLM/settings/actions/runners`
+   - Visit: `https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/settings/actions/runners`
    - Your runner should appear with green "Idle" status
    - Labels: `linux`, `self-hosted`, `wsl`
 
@@ -277,7 +277,7 @@ flutter doctor
    ```bash
    cd ~/actions-runner
    ./config.sh remove --token YOUR_TOKEN
-   ./config.sh --url https://github.com/imrightguy/CloudToLocalLLM \
+   ./config.sh --url https://github.com/CloudToLocalLLM-online/CloudToLocalLLM \
        --token YOUR_TOKEN \
        --labels linux,self-hosted,wsl \
        --name WSL-Linux-$(hostname)

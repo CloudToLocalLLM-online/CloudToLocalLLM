@@ -42,7 +42,7 @@ All four required secrets have been successfully configured in the GitHub reposi
 | `ANDROID_KEY_PASSWORD` | ✅ Configured | 2025-11-15T08:36:34Z |
 | `ANDROID_KEY_ALIAS` | ✅ Configured | 2025-11-15T08:36:33Z |
 
-**Repository**: imrightguy/CloudToLocalLLM
+**Repository**: CloudToLocalLLM-online/CloudToLocalLLM
 
 ### ✅ 4. Verify Secrets Are Accessible in Workflow
 

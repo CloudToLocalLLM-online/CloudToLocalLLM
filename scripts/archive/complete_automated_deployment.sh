@@ -624,7 +624,7 @@ phase4_distribution_execution() {
             fi
         else
             log_error "Invalid remote URL format: $current_remote"
-            log_error "Expected SSH format: git@github.com:imrightguy/CloudToLocalLLM.git"
+            log_error "Expected SSH format: git@github.com:CloudToLocalLLM-online/CloudToLocalLLM.git"
             exit 4
         fi
 
@@ -646,7 +646,7 @@ phase4_distribution_execution() {
         # Verify GitHub raw URL accessibility with retry logic
         log_verbose "Verifying GitHub raw URL accessibility..."
         local semantic_version=$(echo "$current_version" | cut -d'+' -f1)
-        local github_url="https://raw.githubusercontent.com/imrightguy/CloudToLocalLLM/master/dist/cloudtolocalllm-${semantic_version}-x86_64.tar.gz"
+        local github_url="https://raw.githubusercontent.com/CloudToLocalLLM-online/CloudToLocalLLM/master/dist/cloudtolocalllm-${semantic_version}-x86_64.tar.gz"
         local max_attempts=5
         local attempt=1
         local github_accessible=false

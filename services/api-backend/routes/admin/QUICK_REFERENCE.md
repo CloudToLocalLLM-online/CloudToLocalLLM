@@ -408,5 +408,5 @@ LIMIT 10;
 
 For questions or issues:
 
-- GitHub Issues: https://github.com/imrightguy/CloudToLocalLLM/issues
+- GitHub Issues: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues
 - Email: support@cloudtolocalllm.online

@@ -551,7 +551,7 @@ sha256sum -c <filename>.sha256
 (Get-FileHash <filename> -Algorithm SHA256).Hash -eq (Get-Content <filename>.sha256 -First 1).Split()[0]
 ```
 
-**Full Changelog**: https://github.com/imrightguy/CloudToLocalLLM/compare/v{prev_version}...v{version}
+**Full Changelog**: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/compare/v{prev_version}...v{version}
 ```
 
 ## Error Handling

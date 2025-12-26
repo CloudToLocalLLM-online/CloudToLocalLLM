@@ -46,7 +46,7 @@ The project uses a hybrid architecture supporting both cloud-based (OpenAI, Anth
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/imrightguy/CloudToLocalLLM.git
+git clone https://github.com/CloudToLocalLLM-online/CloudToLocalLLM.git
 cd CloudToLocalLLM
 
 # Install dependencies

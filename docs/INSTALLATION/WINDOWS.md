@@ -60,7 +60,7 @@ CloudToLocalLLM requires Ollama to be installed and running:
 ### 📦 **Easy Installation with System Integration**
 
 #### **Download and Install**
-1. **Download**: Visit [GitHub Releases](https://github.com/imrightguy/CloudToLocalLLM/releases/latest)
+1. **Download**: Visit [GitHub Releases](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest)
 2. **Choose**: Download `CloudToLocalLLM-Windows-Setup.exe`
 3. **Run**: Double-click the installer
 4. **Follow**: Complete the installation wizard
@@ -88,7 +88,7 @@ CloudToLocalLLM requires Ollama to be installed and running:
 ### 🔄 **Updates**
 - **Automatic**: CloudToLocalLLM checks for updates automatically
 - **Manual**: Help → Check for Updates in the application menu
-- **Download**: Latest version from [releases page](https://github.com/imrightguy/CloudToLocalLLM/releases)
+- **Download**: Latest version from [releases page](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases)
 
 ### 🗑️ **Uninstallation**
 ```
@@ -103,7 +103,7 @@ Or use "Add or Remove Programs" in Control Panel.
 ### 🎒 **No Installation Required**
 
 #### **Download and Setup**
-1. **Download**: Get `CloudToLocalLLM-Windows-Portable.zip` from [releases](https://github.com/imrightguy/CloudToLocalLLM/releases/latest)
+1. **Download**: Get `CloudToLocalLLM-Windows-Portable.zip` from [releases](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/releases/latest)
 2. **Extract**: Unzip to your preferred location (e.g., `C:\Tools\CloudToLocalLLM`)
 3. **Run**: Double-click `CloudToLocalLLM.exe`
 
@@ -143,7 +143,7 @@ CloudToLocalLLM-Portable/
 #### **Build from Source**
 ```powershell
 # Clone repository
-git clone https://github.com/imrightguy/CloudToLocalLLM.git
+git clone https://github.com/CloudToLocalLLM-online/CloudToLocalLLM.git
 cd CloudToLocalLLM
 
 # Install dependencies
@@ -349,4 +349,4 @@ Remove-Item "$env:LOCALAPPDATA\CloudToLocalLLM" -Recurse -Force
 
 ---
 
-*For additional help, see our  or [open an issue](https://github.com/imrightguy/CloudToLocalLLM/issues).*
+*For additional help, see our  or [open an issue](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues).*

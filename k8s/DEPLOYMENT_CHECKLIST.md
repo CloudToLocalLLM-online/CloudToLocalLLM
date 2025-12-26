@@ -141,7 +141,7 @@ Generate all required secrets before deployment:
 
 ### Repository
 - [ ] Code pushed to GitHub repository
-- [ ] Repository is `imrightguy/CloudToLocalLLM`
+- [ ] Repository is `CloudToLocalLLM-online/CloudToLocalLLM`
 
 ### GitHub Secrets
 Configure these secrets in repository settings:
@@ -265,7 +265,7 @@ Or use the automated script:
 
 **Option C: GitHub Actions** (Automated CI/CD)
 - [ ] Push to main branch
-- [ ] Monitor workflow: https://github.com/imrightguy/CloudToLocalLLM/actions
+- [ ] Monitor workflow: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/actions
 - [ ] Check deployment status
 
 **Option D: Manual Step-by-Step** (Advanced)

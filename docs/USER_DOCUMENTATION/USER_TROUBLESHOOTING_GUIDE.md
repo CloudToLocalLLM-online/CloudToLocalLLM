@@ -309,9 +309,9 @@ tail -n 50 ~/.local/share/cloudtolocalllm/logs/app.log
 ```
 
 ### **Support Channels**
-- **GitHub Issues**: [Report bugs](https://github.com/imrightguy/CloudToLocalLLM/issues)
-- **GitHub Discussions**: [Community support](https://github.com/imrightguy/CloudToLocalLLM/discussions)
-- **Documentation**: [Complete guides](https://github.com/imrightguy/CloudToLocalLLM/tree/main/docs)
+- **GitHub Issues**: [Report bugs](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/issues)
+- **GitHub Discussions**: [Community support](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/discussions)
+- **Documentation**: [Complete guides](https://github.com/CloudToLocalLLM-online/CloudToLocalLLM/tree/main/docs)
 
 ### **Before Reporting**
 1. ✅ Check this troubleshooting guide
