@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.14.29] - 2025-12-26
+## v7.14.29 (2024-10-27)
+
+### Features
+*   **(infra):** Add cloudflare tunnel configuration and service (0e9d558)
+*   **(ops):** Add script to fix Azure OIDC subject mismatch (b92761b)
+*   Add domain routing diagnostics & fixes (fe469ba)
+*   (464e7d9)
+
+### Bug Fixes
+*   **(argocd):** Restore connectivity and optimize resources (41f66c9)
+*   **(argocd):** Solve NOAUTH and manifestation timeouts (a86d9c3)
+*   **(ci):** Convert gemini-cli.cjs to unix line endings (11d1c33)
+*   **(ci):** Correct az login flags and set subscription separately (22f4771)
+*   **(ci):** Debug workflow validity (8f8ce1d)
+*   **(ci):** Fallback to ubuntu-latest to debug runner issue (46c26b1)
+*   **(ci):** Fetch OIDC token manually for az login (4ae8ea7)
+*   **(ci):** Isolate workflow failure by removing sub-workflows (173078b)
+*   **(ci):** Join az login command to single line to fix retry action args (d48c2d5)
+*   **(ci):** Migrate build pipeline to standard runners and update tokens (7ba02f8)
+*   **(ci):** Move json cleanup to cli script and simplify workflows (640ace9)
+*   **(ci):** Replace retry action with shell loop for az login to access OIDC token (578d2b5)
+*   **(ci):** Restore orchestration logic with simplified json handling (cb5efae)
+*   **(ci):** Robust json extraction from gemini output in orchestrator (5e09273)
+*   **(ci):** Stabilize GHA workflows and enforce fail-fast Gemini integration (6ba2703)
+*   **(ci):** Stabilize workflows by standardizing gemini CLI usage and JSON parsing (f19c239)
+*   **(ci):** Use GITHUB_TOKEN for checkout to enable push (9fde24b)
+*   **(ci):** Use GITHUB_TOKEN for dispatch to resolve 403 (542f9bf)
+*   **(ci):** Use python for robust json extraction in workflows (8e75bb5)
+*   **(ci):** Use standard azure/login@v2 action for authentication (027ae8f)
+*   **(gitops):** De-duplicate resources between infrastructure and api-backend (e50e5c7)
+*   **(scripts):** Ensure generate-changelog.sh is executable and LF normalized (368e6e9)
+*   **(scripts):** Force LF line endings for shell scripts (e06627d)
+*   (03092e7)
+*   (302d62f)
+*   (ccf2cd3)
+*   (e635c16)
+*   (eadf45b)
+
+### Documentation
+*   Archive stray task reports from codebase to docs/archive/tasks/ (5826a4c)
+*   Enforce Sequential Thinking Mandate and update MCP tool manual (89d31fe)
+*   Restructure documentation and unify agent context (bf829f5)
+*   Update operational rules and add manifests (54b7a5b)
+
+### Chore
+*   **(argocd):** Finalized resource optimizations and probe fixes (ac24e9a)
+*   **(ci):** Broaden dependabot commit exclusion in main orchestrator (d8f17bf)
+*   **(ci):** Exclude dependabot from main orchestrator (9e67bef)
+*   **(ci):** Fix incorrect action name for retry action (e857d69)
+*   **(ci):** Remove validation workflow and add emoji to build pipeline (f70d23c)
+*   **(deploy):** Promote version main-302d62faf8af552e9be2d890b0f852231fb3e957 [skip ci] (1a32ea5)
+*   **(deploy):** Promote version main-368e6e984a
+
 ## [7.14.28] - 2025-12-26
 ## v7.14.28 (2024-10-27)
 
