@@ -5,8 +5,7 @@ This directory contains comprehensive API documentation for CloudToLocalLLM serv
 ## 📚 Contents
 
 ### Core API Documentation
-- **[Admin API Complete](ADMIN_API_COMPLETE.md)** - Complete administrative API reference
-- **[Admin API](ADMIN_API.md)** - Administrative endpoints and operations
+- **[Admin API](ADMIN_API.md)** - Complete administrative API reference and operations
 - **[Tunnel Client API](TUNNEL_CLIENT_API.md)** - Client-side tunnel management API
 - **[Tunnel Server API](TUNNEL_SERVER_API.md)** - Server-side tunnel management API
 

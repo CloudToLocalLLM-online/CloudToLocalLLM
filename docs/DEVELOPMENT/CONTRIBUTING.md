@@ -98,6 +98,15 @@ lib/
 ├── services/      # Core services (tray, connections, etc.)
 ├── shared/        # Shared utilities
 └── widgets/       # Custom widgets
+
+docs/
+├── api/           # API documentation
+├── architecture/  # System architecture and design
+├── deployment/    # Deployment guides
+├── development/   # Developer guides and rules
+├── governance/    # Legal and Security policies
+├── operations/    # Operational runbooks
+└── user-guide/    # End-user documentation
 ```
 
 ---
@@ -318,7 +327,7 @@ flutter test --coverage
 - **GitHub Discussions**: General questions and ideas
 - **GitHub Issues**: Bug reports and feature requests
 - **PR Comments**: Code-specific questions
-- **Developer Onboarding**: See [docs/DEVELOPMENT/DEVELOPER_ONBOARDING.md](docs/DEVELOPMENT/DEVELOPER_ONBOARDING.md)
+- **Developer Onboarding**: See [docs/development/DEVELOPER_ONBOARDING.md](docs/development/DEVELOPER_ONBOARDING.md)
 
 ### **Response Times**
 - **Discussions**: 1-2 days

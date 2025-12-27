@@ -1,10 +1,15 @@
-# Project Structure
+# Project Structure & Governance
+
+## 🛡️ Root Directory Preservation Protocol (RDPP)
+- **DO NOT** create new files in the repository root (`/`).
+- **Permitted Files:** `.gitignore`, `LICENSE`, `package.json`, `pubspec.yaml`, `Gemini.md`, `README.md`.
+- **Redirection:** All new assets must be placed in `docs/`, `config/`, `scripts/`, or `infra/` as appropriate.
 
 ## Key Directories
 - `lib/` - Flutter app (main.dart, services/, widgets/)
 - `services/` - Node.js backend (api-backend/, streaming-proxy/)
 - `k8s/` - Kubernetes manifests
-- `docs/` - Documentation
+- `docs/` - Documentation (api/, architecture/, deployment/, development/, governance/, operations/, user-guide/)
 - `.github/workflows/` - CI/CD (deploy.yml active, archive/ for old)
 
 ## Architecture Patterns

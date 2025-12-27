@@ -36,7 +36,7 @@ This document provides the context, architectural understanding, and operational
 | `lib/` | **Flutter Source Code**. Main entry points: `main.dart`, `main_privacy_enhanced.dart`. |
 | `services/` | **Backend Services**. `api-backend/`, `streaming-proxy/`. |
 | `config/` | **Configuration**. Docker, Nginx, Kubernetes, Grafana configs. |
-| `docs/` | **Documentation**. Detailed guides for Users, Devs, Security, and Ops. |
+| `docs/` | **Documentation**. Organized into `api/`, `architecture/`, `deployment/`, `development/`, `governance/`, `operations/`, and `user-guide/`. |
 | `k8s/` | **Kubernetes Manifests**. Helm-free, Kustomize-based structure. |
 | `test/` | **Tests**. Flutter unit and widget tests. |
 | `infra/` | **Infrastructure as Code**. Terraform scripts. |
@@ -61,8 +61,17 @@ The development environment is a hybrid of **WSL 2 (Ubuntu 24.04)** and **Window
 | **Ollama** | Win Host | ✅ Ready | Host service proxied via `localhost`. |
 | **Flutter** | WSL Native| ✅ Ready | Linux SDK installed. |
 
-## 5. Core Philosophy: The Sequential Thinking Mandate
+## 5. Repository Governance & Philosophy
 
+### 1. 🛡️ Root Directory Preservation Protocol (RDPP)
+**Status:** MANDATORY / ZERO TOLERANCE
+
+To maintain repository integrity, a strict "clean-root" policy is enforced.
+- **DO NOT** create new files or directories in the repository root (`/`).
+- **Permitted Files:** `.gitignore`, `.gitattributes`, `LICENSE`, `package.json`, `pubspec.yaml`, `Makefile`, `docker-compose.yml`, `playwright.config.js`, `Gemini.md`, `README.md`.
+- **Redirection:** All new assets must be placed in `docs/`, `config/`, `scripts/`, or `infra/` as appropriate.
+
+### 2. The Sequential Thinking Mandate
 We adhere to a strict "Think, then Act" philosophy, reinforced by a mandatory **Sequential Thinking Protocol** for all complex tasks.
 
 ### 1. The Sequential Thinking Protocol (`sequentialthinking`)
@@ -159,4 +168,4 @@ Do not guess about the codebase. For requests requiring broad context, **MUST** 
 ## 10. How to Use This Context
 
 ---
-*Unified Context - Last Updated: 2025-12-25*
+*Unified Context - Last Updated: 2025-12-27 (Repository Governance Enforcement)*

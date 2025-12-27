@@ -50,11 +50,11 @@ You can access the latest web deployment directly at: **[cloudtolocalllm.online]
 
 ## 📖 Documentation
 
-Comprehensive documentation is available in the `docs/` directory:
+Comprehensive documentation is available in the [`docs/`](docs/README.md) directory:
 
-*   **[User Guide](docs/USER_DOCUMENTATION/USER_GUIDE.md):** Detailed configuration and usage instructions.
-*   **:** Walkthrough for your first run.
-*   **[Troubleshooting](docs/USER_DOCUMENTATION/USER_TROUBLESHOOTING_GUIDE.md):** Solutions for common issues.
+*   **[User Guide](docs/user-guide/ADMIN_CENTER_USER_GUIDE.md):** Detailed configuration and usage instructions.
+*   **[Developer Onboarding Guide](docs/development/DEVELOPER_ONBOARDING.md):** Deep dive into the codebase.
+*   **[Troubleshooting](docs/TROUBLESHOOTING_ARGOCD_CONNECTIVITY.md):** Solutions for common issues.
 
 ## 🛠️ Development
 
@@ -90,7 +90,7 @@ If you are a developer looking to contribute or build from source, follow these 
     flutter run -d chrome  # Web Interface
     ```
 
-For full developer details, see the **[Developer Onboarding Guide](docs/DEVELOPMENT/DEVELOPER_ONBOARDING.md)**.
+For full developer details, see the **[Developer Onboarding Guide](docs/development/DEVELOPER_ONBOARDING.md)**.
 
 ### AI-Powered CI/CD
 
@@ -108,7 +108,7 @@ CloudToLocalLLM features an innovative **unified AI-powered CI/CD system** that 
 *   **Comprehensive Status:** All deployment status visible in single workflow run
 *   **Manual Overrides:** Force deployment or override platform detection when needed
 
-See **[AI-Powered CI/CD Documentation](docs/DEVELOPMENT/AI_POWERED_CICD.md)** for detailed information.
+See **[AI-Powered CI/CD Documentation](docs/development/AI_POWERED_CICD.md)** for detailed information.
 
 ## 🤝 Contributing
 
