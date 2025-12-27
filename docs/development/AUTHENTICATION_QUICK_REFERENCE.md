@@ -56,7 +56,7 @@ Backend Verifies Audience Matches
 **Cause**: JWKS endpoint not accessible or Auth0 misconfigured
 
 **Solution**:
-1. Test JWKS endpoint: `curl https://dev-v2f2p008x3dr74ww.us.auth0.com/.well-known/jwks.json`
+1. Test JWKS endpoint: `curl https://dev-vivn1fcgzi0c2czy.us.auth0.com/.well-known/jwks.json`
 2. Verify Auth0 application identifier is set correctly
 3. Check backend logs for detailed error messages
 
@@ -84,7 +84,7 @@ Backend Verifies Audience Matches
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `AUTH0_AUDIENCE` | `https://api.cloudtolocalllm.online` | Expected token audience |
-| `AUTH0_JWKS_URI` | `https://dev-v2f2p008x3dr74ww.us.auth0.com/.well-known/jwks.json` | JWKS endpoint for token validation |
+| `AUTH0_JWKS_URI` | `https://dev-vivn1fcgzi0c2czy.us.auth0.com/.well-known/jwks.json` | JWKS endpoint for token validation |
 | `SUPABASE_JWT_SECRET` | (required) | Secret for HS256 token validation |
 | `JWT_AUDIENCE` | `https://api.cloudtolocalllm.online` | Alias for AUTH0_AUDIENCE |
 

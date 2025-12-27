@@ -14,7 +14,7 @@ After successful Auth0 login, the Flutter web app was making API calls that all 
 
 ### Frontend Configuration (web/auth0-bridge.js)
 ```javascript
-const AUTH0_AUDIENCE = 'https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/';
+const AUTH0_AUDIENCE = 'https://dev-vivn1fcgzi0c2czy.us.auth0.com/api/v2/';
 ```
 This is the Auth0 Management API audience, used for managing Auth0 resources.
 
@@ -27,12 +27,12 @@ The backend expects the application's own API audience.
 
 ### What Happens
 
-1. Frontend requests Auth0 token with audience: `https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/`
+1. Frontend requests Auth0 token with audience: `https://dev-vivn1fcgzi0c2czy.us.auth0.com/api/v2/`
 2. Auth0 issues token with this audience claim
 3. Frontend sends token in Authorization header: `Bearer <token>`
 4. Backend receives token and validates it
 5. Backend checks audience claim: expects `https://api.cloudtolocalllm.online`
-6. Token has audience: `https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/`
+6. Token has audience: `https://dev-vivn1fcgzi0c2czy.us.auth0.com/api/v2/`
 7. **Audience mismatch → Token rejected with 401**
 
 ## Solution
@@ -43,7 +43,7 @@ Change the Auth0 audience to match the backend configuration:
 
 ```javascript
 // BEFORE (WRONG)
-const AUTH0_AUDIENCE = 'https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/';
+const AUTH0_AUDIENCE = 'https://dev-vivn1fcgzi0c2czy.us.auth0.com/api/v2/';
 
 // AFTER (CORRECT)
 const AUTH0_AUDIENCE = 'https://api.cloudtolocalllm.online';
@@ -132,7 +132,7 @@ The audience claim in a JWT token is a security feature that ensures:
   - Used for: Authenticating users to the application
 
 - **Management API Audience** (what was wrong): Identifies Auth0's management API
-  - Example: `https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/`
+  - Example: `https://dev-vivn1fcgzi0c2czy.us.auth0.com/api/v2/`
   - Used for: Managing Auth0 resources (users, applications, etc.)
 
 ### Future Considerations

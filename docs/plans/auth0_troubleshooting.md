@@ -10,7 +10,7 @@ The error usually indicates a mismatch between the requested `redirect_uri` and 
 ### 1. Authenticate with Auth0 CLI
 Login to the specific tenant:
 ```bash
-auth0 login --tenant dev-v2f2p008x3dr74ww.us.auth0.com
+auth0 login --tenant dev-vivn1fcgzi0c2czy.us.auth0.com
 ```
 
 ### 2. Inspect Application Configuration

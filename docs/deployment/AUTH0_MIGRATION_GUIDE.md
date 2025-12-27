@@ -175,9 +175,9 @@ window.Auth0Bridge = {
 The bridge is configured with Auth0 tenant settings:
 
 ```javascript
-const AUTH0_DOMAIN = 'dev-v2f2p008x3dr74ww.us.auth0.com';
+const AUTH0_DOMAIN = 'dev-vivn1fcgzi0c2czy.us.auth0.com';
 const AUTH0_CLIENT_ID = 'FuXPnevXpp311CdYHGsbNZe9t3D8Ts7A';
-const AUTH0_AUDIENCE = 'https://dev-v2f2p008x3dr74ww.us.auth0.com/api/v2/';
+const AUTH0_AUDIENCE = 'https://dev-vivn1fcgzi0c2czy.us.auth0.com/api/v2/';
 ```
 
 ### Flutter Integration
