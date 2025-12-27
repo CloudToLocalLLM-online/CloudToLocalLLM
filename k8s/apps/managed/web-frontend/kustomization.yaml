@@ -4,7 +4,7 @@ resources:
   - ../../../deployments/app_base/web-frontend
 images:
   - name: imrightguycloudtolocalllm.azurecr.io/web
-    newTag: main-b3edfc717e17ca8fe67400de47cf1d584d8d33e2
+    newTag: main-693ef91869fc18cfd9813aa3dc2ceeb065a9b18f
 patches:
   - path: ../../../deployments/overlays/managed/env-patch.yaml
   - path: ../../../deployments/overlays/managed/scaling.yaml
