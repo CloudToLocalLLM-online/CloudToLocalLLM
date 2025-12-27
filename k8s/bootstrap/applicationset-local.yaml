@@ -39,7 +39,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/imrightguy/CloudToLocalLLM
+        repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
         targetRevision: main
         path: '{{path}}'
       destination:

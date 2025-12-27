@@ -22,7 +22,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
     targetRevision: main
     path: k8s/apps/managed/api-backend
     kustomize:
@@ -85,7 +85,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
     targetRevision: main
     path: k8s/apps/managed/web-frontend
     kustomize:
@@ -148,7 +148,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
     targetRevision: main
     path: k8s/apps/managed/postgres
     kustomize:
@@ -211,7 +211,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
     targetRevision: main
     path: k8s/apps/managed/redis
     kustomize:
@@ -274,7 +274,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
     targetRevision: main
     path: k8s/apps/managed/monitoring
   destination:
@@ -334,7 +334,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
     targetRevision: main
     path: k8s/apps/managed/infrastructure
   destination:
@@ -390,7 +390,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
     targetRevision: main
     path: k8s/apps/managed/utilities
   destination:
@@ -450,7 +450,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/imrightguy/CloudToLocalLLM
+    repoURL: https://github.com/CloudToLocalLLM-online/CloudToLocalLLM
     targetRevision: main
     path: k8s/apps/managed/ingress-cloudflared
   destination:
