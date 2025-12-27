@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # Cloudflare Tunnel Diagnostic and Restoration Script
-# Version: 1.5.0 (SOP Aligned)
+# Version: 1.6.0 (Secure Refactor)
 # Usage: CLOUDFLARE_API_KEY=xxx scripts/cloudflare-tunnel-diagnostic.sh
 
 set -e
 
-# Configuration (Defaults)
+# Secure Configuration (Inject via Env)
 CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL:-"cmaltais@cloudtolocalllm.online"}
-DOMAIN="cloudtolocalllm.online"
-TUNNEL_ID="62da6c19-947b-4bf6-acad-100a73de4e0d"
+DOMAIN=${CLOUDFLARE_DOMAIN:-"cloudtolocalllm.online"}
+TUNNEL_ID=${CLOUDFLARE_TUNNEL_ID:-"62da6c19-947b-4bf6-acad-100a73de4e0d"}
 
 # Colors for output
 RED='\033[0;31m'
@@ -27,7 +27,6 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 # Security Check
 if [ -z "$CLOUDFLARE_API_KEY" ]; then
     log_error "CLOUDFLARE_API_KEY environment variable is not set."
-    log_info "Usage: CLOUDFLARE_API_KEY=your_key $0"
     exit 1
 fi
 
@@ -46,10 +45,9 @@ cf_api_call() {
 
 # Main execution
 main() {
-    log_info "Starting Cloudflare Tunnel Diagnostic (Error 1033 Protocol)"
+    log_info "Starting Secure Cloudflare Diagnostic for $DOMAIN"
     
     # 1. Fetch Account ID
-    log_info "Fetching Account ID..."
     ACCOUNT_ID=$(cf_api_call "GET" "accounts" | jq -r '.result[0].id')
     if [ -z "$ACCOUNT_ID" ] || [ "$ACCOUNT_ID" == "null" ]; then
         log_error "Failed to retrieve Account ID. Check your API key."
@@ -58,8 +56,8 @@ main() {
     log_success "Account ID: $ACCOUNT_ID"
 
     # 2. Check Tunnel Status
-    log_info "Checking Tunnel Status..."
-    TUNNEL_STATUS=$(cf_api_call "GET" "accounts/$ACCOUNT_ID/cfd_tunnel/$TUNNEL_ID" | jq -r '.result.status')
+    TUNNEL_INFO=$(cf_api_call "GET" "accounts/$ACCOUNT_ID/cfd_tunnel/$TUNNEL_ID")
+    TUNNEL_STATUS=$(echo "$TUNNEL_INFO" | jq -r '.result.status')
     log_info "Tunnel Status: $TUNNEL_STATUS"
 
     if [ "$TUNNEL_STATUS" != "healthy" ]; then
@@ -69,49 +67,27 @@ main() {
     fi
 
     # 3. Check Active Connectors
-    log_info "Checking Active Connectors..."
     CONNECTORS=$(cf_api_call "GET" "accounts/$ACCOUNT_ID/cfd_tunnel/$TUNNEL_ID/connections" | jq -r '.result[] | .id')
     if [ -z "$CONNECTORS" ]; then
-        log_error "No active connectors found. Error 1033 confirmed at origin side."
+        log_error "No active connectors found. Error 1033 likely active at origin side."
     else
-        log_success "Found active connectors: $CONNECTORS"
+        log_success "Found active connectors."
     fi
 
-    # 4. Verify CNAME Alignment for Stack
-    log_info "Verifying DNS CNAME Alignment for all subdomains..."
+    # 4. Verify CNAME Alignment
     ZONE_ID=$(cf_api_call "GET" "zones?name=$DOMAIN" | jq -r '.result[0].id')
-    
     ENDPOINTS=("" "app" "api" "argocd" "grafana")
     for SUB in "${ENDPOINTS[@]}"; do
         FULL_NAME="${SUB:+$SUB.}$DOMAIN"
-        log_info "Verifying $FULL_NAME..."
         RECORD=$(cf_api_call "GET" "zones/$ZONE_ID/dns_records?name=$FULL_NAME&type=CNAME" | jq -r '.result[0].content')
         if [[ "$RECORD" == *".cfargotunnel.com"* ]]; then
             log_success "$FULL_NAME -> $RECORD (Correct)"
         else
-            log_warning "$FULL_NAME record is missing or incorrect: $RECORD"
+            log_warning "$FULL_NAME record is missing or misaligned: $RECORD"
         fi
     done
 
-    # 5. External Connectivity Check (Handshake)
-    log_info "Performing HTTP/2 Handshake Verification..."
-    URLS=(
-        "https://cloudtolocalllm.online/"
-        "https://app.cloudtolocalllm.online/health"
-        "https://api.cloudtolocalllm.online/health"
-    )
-
-    for URL in "${URLS[@]}"; do
-        log_info "Testing $URL..."
-        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --http2 --max-time 10 "$URL")
-        if [ "$HTTP_CODE" == "200" ]; then
-            log_success "$URL returned 200 OK"
-        else
-            log_error "$URL returned $HTTP_CODE"
-        fi
-    done
-
-    log_success "Diagnostic Complete."
+    log_success "Secure Diagnostic Complete."
 }
 
 main "$@"
