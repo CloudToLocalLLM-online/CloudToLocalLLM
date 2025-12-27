@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.17.0] - 2025-12-27
+## v7.17.0
+
+### Features
+* Enhanced Cloudflare API integration for tunnel diagnostics, DNS automation, and implementation plan.
+* Added script to fix Azure OIDC subject mismatch.
+* Added secure secret injection to deployment pipeline.
+
+### Bug Fixes
+* Fixed ArgoCD 502 errors by enabling HA deployment, removing insecure mode, fixing Ingress host to cloudtolocalllm.online, and adding TLS configuration.
+* Fixed ArgoCD cloudflared configuration to use HTTP instead of HTTPS.
+* Resolved grep option error in build pipeline.
+* Ensured actions/checkout is executed before gh commands in orchestrator.
+* Resolved secrets deployment failure and optimized pipeline.
+* Resolved ArgoCD 502 gateway and optimized cloudflared stability.
+* Correctly handled optional cloudflare token in validation script.
+* Made Cloudflare DNS token optional in validation to prevent blocking.
+* Used standard azure/login@v2 action for authentication.
+* Fixed az login flags and set subscription separately.
+* Replaced retry action with shell loop for az login to access OIDC token.
+* Joined az login command to single line to fix retry action args.
+* Migrated build pipeline to standard runners and updated tokens.
+* Used GITHUB_TOKEN for checkout to enable push.
+* Used GITHUB_TOKEN for dispatch to resolve 403.
+* Converted gemini-cli.cjs to unix line endings.
+* Restored orchestration logic with simplified json handling.
+* Isolated workflow failure by removing sub-workflows.
+
+### Refactoring
+* Used jq for secure secret injection in deployment pipeline.
+
+### Chore
+* Aligned concurrency and use jq for secure secret injection.
+* Enforced LF line endings and normalize.
+* Removed validation workflow and added emoji to build pipeline.
+* Fixed incorrect action name for retry action.
+* Excluded dependabot from main orchestrator.
+* Forced refresh build pipeline config.
+* Broadened dependabot commit exclusion in main orchestrator.
+
+### Documentation
+* Updated stabilization report with comprehensive findings.
+
 ## [7.16.3] - 2025-12-26
 ## v7.16.3 (2024-10-27)
 
